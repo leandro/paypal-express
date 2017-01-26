@@ -59,6 +59,7 @@ module Paypal
 end
 
 require 'paypal/util'
+require 'paypal/mixins/trackable_attributes'
 require 'paypal/exception'
 require 'paypal/exception/http_error'
 require 'paypal/exception/api_error'
