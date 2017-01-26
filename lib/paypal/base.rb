@@ -18,14 +18,14 @@ module Paypal
     end
 
     def to_h
-      readable_attributes.inject({}) do |attrs, attr|
+      self.class.readable_attributes.inject({}) do |attrs, attr|
         value = send(attr)
         attrs.update(attr => value.kind_of?(::Paypal::Base) ? value.to_h : value)
       end
     end
 
     def inspect
-      pretty_attributes = readable_attributes.map do |attr|
+      pretty_attributes = self.class.readable_attributes.map do |attr|
         value = send(attr)
 
         if value.kind_of?(::Paypal::Base)
@@ -37,7 +37,9 @@ module Paypal
         "\t:%s => %s" % [attr, inspect_output]
       end.join("\n")
 
-      "#<%s readable_attributes=\n%s>" % [self.class.name, pretty_attributes]
+      pretty_attributes.insert(0, ?\n) unless pretty_attributes.empty?
+
+      "#<%s readable_attributes=%s>" % [self.class.name, pretty_attributes]
     end
   end
 end
