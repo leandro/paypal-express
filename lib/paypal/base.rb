@@ -17,10 +17,11 @@ module Paypal
       attr_missing!
     end
 
-    def to_h
+    def as_json
       self.class.readable_attributes.inject({}) do |attrs, attr|
         value = send(attr)
-        attrs.update(attr => value.kind_of?(::Paypal::Base) ? value.to_h : value)
+        value = value.is_a?(Array) ? value.map(&method(:json_value)) : json_value(value)
+        attrs.update(attr => value)
       end
     end
 
@@ -31,7 +32,14 @@ module Paypal
         if value.kind_of?(::Paypal::Base)
           inspect_output = value.inspect.split("\n").join("\n\t")
         else
-          inspect_output = value.respond_to?(:inspect) ? value.inspect : value
+          begin
+            inspect_output = value.respond_to?(:inspect) ? value.inspect : value
+          rescue NoMethodError
+            # Sometimes RestClient::Response#inspect can't reach `code`
+            # attribute because `net_http_res` is nil in this gem usage,
+            # thererefore as nil, it doesn't have `code` method
+            inspect_output = value.respond_to?(:body) ? value.body : value
+          end
         end
 
         "\t:%s => %s" % [attr, inspect_output]
@@ -40,6 +48,16 @@ module Paypal
       pretty_attributes.insert(0, ?\n) unless pretty_attributes.empty?
 
       "#<%s readable_attributes=%s>" % [self.class.name, pretty_attributes]
+    end
+
+    private
+
+    def json_value(value)
+      case value
+      when ::Paypal::Base then value.as_json
+      when ::RestClient::Response then value.body
+      else value
+      end
     end
   end
 end
